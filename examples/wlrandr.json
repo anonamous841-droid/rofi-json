@@ -1,0 +1,53 @@
+{
+  "prompt": "Choose option",
+  "choices": [
+    {
+      "name": "Modify monitors",
+      "type": "submenu",
+      "generate": {
+        "prompt": "Choose monitor",
+        "command": "swaymsg -t get_outputs | jq -r '[ .[].name ]'"
+      },
+      "prompt": "Options for '$1' monitor",
+      "choices": [
+        {
+          "name": "Enable",
+          "type": "item",
+          "exec": "swaymsg \"output $1 enable\""
+        },
+        {
+          "name": "Disable",
+          "type": "item",
+          "exec": "swaymsg \"output $1 disable\""
+        },
+        {
+          "name": "Rotate",
+          "type": "submenu",
+          "prompt": "Choose rotation for '$1'",
+          "choices": [
+            {
+              "name": "Rotate 90° clockwise",
+              "type": "item",
+              "exec": "swaymsg \"output $1 transform 90 clockwise\""
+            },
+            {
+              "name": "Rotate 90° anticlockwise",
+              "type": "item",
+              "exec": "swaymsg \"output $1 transform 90 anticlockwise\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Create Virtual Output",
+      "type": "item",
+      "exec": "swaymsg create_output"
+    },
+    {
+      "name": "Lock Screen",
+      "type": "item",
+      "exec": "~/.config/sway/lock.sh"
+    }
+  ]
+}
