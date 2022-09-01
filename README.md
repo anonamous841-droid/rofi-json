@@ -48,7 +48,7 @@ The <code>generate</code> attribute allows us to create dynamic menus, it requir
 
 That <code>command</code> is, well, a command that returns a valid array (As in, readable by <code>jq</code>) and used to show a new menu *before* the options in <code>choices</code> attribute.
 
-This way, we can retrieve that selection and use it later using <code>$1<code/> which means: Replace that <code>$1</code> with the response from the first generated submenu.
+This way, we can retrieve that selection and use it later using <code>$1</code> which means: Replace that <code>$1</code> with the response from the first generated submenu.
 
 Of course, that means that <code>$2</code> will use the response from the second generated submenu and so on.
 
