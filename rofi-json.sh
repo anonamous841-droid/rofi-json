@@ -39,12 +39,14 @@ do_menu() {
 
   options=$(echo ${MENU} | jq -r '.choices[].name')
 
-  # Get the selected option and its data
+  # Get the selected option
   result=$(printf "$options\nCancel" | rofi -p "$prompt" -dmenu)
-  data=$(echo ${MENU} | jq -r ".choices[] | select(.name==\"$result\")")
+
+  # Gets the data of said option (Returns the first coincidence if name is repeated) or null (If not found)
+  data=$(echo ${MENU} | jq -r "[ .choices[] | select(.name==\"$result\") ] | .[0]")
 
   # If we didn't get any data (Be it wrong choice or exited rofi), just exit
-  if [ -z "$data" ]; then
+  if [ "$data" = null ]; then
     exit 1
   fi
 
@@ -78,7 +80,7 @@ do_menu() {
         exit 1
       fi
 
-      add_param $data_result # Now we add the result for future parsing
+      add_param "$data_result" # Now we add the result for future parsing
     fi
 
     # Now we replace the old menu with the new one
