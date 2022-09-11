@@ -56,5 +56,6 @@ This replacement not only takes place in the <code>prompt</code>, but also in th
 
 ## To-Do
 
-- Add <code>input</code> type
-- Add PKGBUILD file
+- Load other json files as menus instead of nesting only
+- <code>input</code> type
+- PKGBUILD file

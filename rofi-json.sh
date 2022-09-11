@@ -1,7 +1,13 @@
 # !/usr/bin/env sh
 
-RESOURCE_NAME=$1
-RESOURCE_FILE="$HOME/.config/sway/resources/$1.json"
+RESOURCE_NAME="$1.json"
+RESOURCE_FILE="$HOME/.config/sway/resources/$RESOURCE_NAME"
+
+# If file doesn't exist, throw error
+if [ ! -f "$RESOURCE_FILE" ]; then
+  echo "ERROR: Resource file '$RESOURCE_NAME' not found"
+  exit 1
+fi
 
 JSON=$(jq -r '.' "$RESOURCE_FILE")
 
