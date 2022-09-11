@@ -1,0 +1,20 @@
+{
+  "prompt": "Choose action",
+  "choices": [
+    {
+      "name": "Shutdown\\0icon\\x1fsystem-shutdown",
+      "type": "item",
+      "exec": "systemctl poweroff"
+    },
+    {
+      "name": "Restart\\0icon\\x1fsystem-reboot",
+      "type": "item",
+      "exec": "systemctl reboot"
+    },
+    {
+      "name": "Log Out\\0icon\\x1fsystem-log-out",
+      "type": "item",
+      "exec": "swaymsg exit"
+    }
+  ]
+}

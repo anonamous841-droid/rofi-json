@@ -40,6 +40,11 @@
       ]
     },
     {
+      "name": "Power menu",
+      "type": "submenu",
+      "redirect": "powermenu"
+    },
+    {
       "name": "Create Virtual Output",
       "type": "item",
       "exec": "swaymsg create_output"

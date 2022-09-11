@@ -1,15 +1,23 @@
 # !/usr/bin/env sh
 
-RESOURCE_NAME="$1.json"
-RESOURCE_FILE="$HOME/.config/sway/resources/$RESOURCE_NAME"
+set -e 
 
-# If file doesn't exist, throw error
-if [ ! -f "$RESOURCE_FILE" ]; then
-  echo "ERROR: Resource file '$RESOURCE_NAME' not found"
-  exit 1
-fi
+JSON_LOCATION="${JSON_LOCATION:-"$HOME/.config/sway/resources"}"
 
-JSON=$(jq -r '.' "$RESOURCE_FILE")
+load_json() {
+  JSON_NAME="$1.json"
+  JSON_FILE="$JSON_LOCATION/$JSON_NAME"
+
+  # If file doesn't exist, throw error
+  if [ ! -f "$JSON_FILE" ]; then
+    echo "ERROR: Resource file '$JSON_NAME' not found" >&2
+    exit 1
+  fi
+
+  echo $(jq -r '.' "$JSON_FILE")
+}
+
+JSON="$(load_json "$1")"
 
 PARAM_COUNTER=0
 declare -A PARAM_LIST
@@ -89,8 +97,15 @@ do_menu() {
       add_param "$data_result" # Now we add the result for future parsing
     fi
 
-    # Now we replace the old menu with the new one
-    JSON=$data
+    # Load the external json menu if it points to one, otherwise replace with obtained data
+    data_has_redirect=$(echo ${data} | jq 'has("redirect")')
+
+    if [ $data_has_redirect = true ]; then
+      data_redirect=$(echo ${data} | jq -r '.redirect')
+      JSON=$(load_json "$data_redirect")
+    else
+      JSON=$data
+    fi
   fi
 
   return 0
