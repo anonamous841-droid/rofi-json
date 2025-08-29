@@ -91,9 +91,8 @@ do_menu() {
       OPTIONS+="\n"
   done <<< "${OPTION_LIST}"
 
-  set -x
   # Get the selected option  
-  if ! RESULT=$(printf "${OPTIONS}\nCancel" | rofi "${ROFI_OPTIONS[@]}" ) ; then
+  if ! RESULT=$(printf "${OPTIONS}" | rofi "${ROFI_OPTIONS[@]}" ) ; then
     exit 1 # In case the user cancels (esc key)
   fi   
   RESULT=${RESULT%%"${ICON_TOKEN}"}
