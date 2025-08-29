@@ -88,7 +88,6 @@ do_menu() {
       OPTIONS+="\n"
   done <<< "${OPTION_LIST}"
 
-  set -x
   # Get the selected option  
   RESULT=$(printf "$OPTIONS\nCancel" | rofi "${ROFI_OPTIONS[@]}" )
   RESULT=${RESULT%%"$ICON_TOKEN"}
