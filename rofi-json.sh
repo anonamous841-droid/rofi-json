@@ -86,7 +86,7 @@ do_menu() {
     fi
 
     OPTIONS+=${OPTNAME}
-    if [ "${OPTICON}" != "null" ]; then
+    if [ -n "${OPTICON}" ] && [ "${OPTICON}" != "null" ]; then
       OPTIONS+="${ICON_TOKEN}${ROFI_ICON_LOCATION}/${OPTICON}"
     fi
 
