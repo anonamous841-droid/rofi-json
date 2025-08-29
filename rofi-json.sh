@@ -1,4 +1,4 @@
-# !/usr/bin/env sh
+#!/bin/bash
 
 set -e
 
@@ -7,7 +7,7 @@ ROFI_ICON_LOCATION="${ROFI_ICON_LOCATION:-"$HOME/.config/rofi/icons"}"
 
 ICON_TOKEN="\x00icon\x1f"
 
-BASE_ROFI_OPTIONS="-dmenu"
+BASE_ROFI_OPTIONS=(-dmenu)
 
 load_json() {
   JSON_NAME="$1.json"
@@ -19,20 +19,20 @@ load_json() {
     exit 1
   fi
 
-  echo $(jq -r '.' "$JSON_FILE")
+  jq -r '.' "$JSON_FILE"
 }
 
 JSON="$(load_json "$1")"
 
 PARAM_COUNTER=0
 declare -A PARAM_LIST
-
+THEME=""
 
 add_param() {
   NEW_PARAM=$1
 
-  PARAM_COUNTER=$(( $PARAM_COUNTER + 1 )) # Move param counter ("seq" in do_parse requires number 1 or higher)
-  PARAM_LIST[$PARAM_COUNTER]=$NEW_PARAM # Add param to list
+  PARAM_COUNTER=$( ${PARAM_COUNTER} + 1 ) # Move param counter ("seq" in do_parse requires number 1 or higher)
+  PARAM_LIST[$PARAM_COUNTER]=${NEW_PARAM} # Add param to list
 }
 
 
@@ -44,113 +44,124 @@ do_parse() {
     OLD_VALUE="\$$i"
     NEW_VALUE=${PARAM_LIST[$i]}
 
-    STRING=$(echo "$STRING" | sed "s/$OLD_VALUE/$NEW_VALUE/")
+    STRING=$(echo "$STRING" | sed "s/$OLD_VALUE/$NEW_VALUE/g")
   done
 
   echo "$STRING"
 }
-
 
 do_menu() {
   # Menu is the JSON passed to the function
   MENU=$1
 
   # Get menu prompt and the options for it
-  base_prompt=$(echo ${MENU} | jq -r '.prompt')
-  prompt=$(do_parse "$base_prompt")
+  BASE_PROMPT=$(echo "${MENU}" | jq -r '.prompt')
+  PROMPT=$(do_parse "$BASE_PROMPT")
 
-  theme=$(echo ${MENU} | jq -r '.theme')
-  ROFI_OPTIONS=${BASE_ROFI_OPTIONS}
-  if [ "$theme" != "null" ]; then
-      ROFI_OPTIONS+=" -theme ${theme}"
+  BASE_THEME=$(echo "${MENU}"| jq -r '.theme')
+  if [ "${BASE_THEME}" != "null" ]; then
+    THEME="${BASE_THEME}"
+  fi
+  
+  ROFI_OPTIONS=("${BASE_ROFI_OPTIONS[@]}")
+
+  if [ -n "${PROMPT:-}" ] ; then
+    ROFI_OPTIONS+=(-p "${PROMPT}")
+  fi
+  
+  if [ -n "${THEME}" ]; then
+    ROFI_OPTIONS+=(-theme-str "@import \"${THEME}\"")
   fi
 
-  options=""
-  option_list=$(echo ${MENU} | jq -cr '.choices[] | "\(.name)|\(.icon)"')
+  OPTIONS=""
+  OPTION_LIST=$(echo "${MENU}"| jq -cr '.choices[] | "\(.name)|\(.icon)"')
 
-  while IFS="|" read -r optName optIcon
+  while IFS="|" read -r OPTNAME OPTICON
   do
-      if [ "$optName" == "null" ]; then
+      if [ "${OPTNAME}" == "null" ]; then
           continue
       fi
-      options+=$optName
-      if [ "$optIcon" != "null" ]; then
-          options+="${ICON_TOKEN}${ROFI_ICON_LOCATION}/$optIcon"
+      OPTIONS+=${OPTNAME}
+      if [ "${OPTICON}" != "null" ]; then
+          OPTIONS+="${ICON_TOKEN}${ROFI_ICON_LOCATION}/$OPTICON"
       fi
-      options+="\n"
-  done <<< $option_list
+      OPTIONS+="\n"
+  done <<< "${OPTION_LIST}"
 
-  # Get the selected option
-  result=$(printf "$options\nCancel" | rofi -p "$prompt" $ROFI_OPTIONS )
-  result=${result%%$ICON_TOKEN}
+  set -x
+  # Get the selected option  
+  RESULT=$(printf "$OPTIONS\nCancel" | rofi "${ROFI_OPTIONS[@]}" )
+  RESULT=${RESULT%%"$ICON_TOKEN"}
 
   # Gets the data of said option (Returns the first coincidence if name is repeated) or null (If not found)
-  data=$(echo ${MENU} | jq -r "[ .choices[] | select(.name | startswith(\"$result\")) ] | .[0]")
+  DATA=$(echo "${MENU}" | jq -r "[ .choices[] | select(.name | startswith(\"$RESULT\")) ] | .[0]")
 
   # If we didn't get any data (Be it wrong choice or exited rofi), just exit
-  if [ "$data" == "null" ]; then
+  if [ "${DATA}" == "null" ]; then
     exit 1
   fi
 
   # Since we have data, get the type of the selected option
-  data_type=$(echo ${data} | jq -r '.type')
-  data_icon=$(echo ${data} | jq -r '.exec')
+  DATA_TYPE=$(echo "${DATA}" | jq -r '.type')
 
-  if [ "$data_type" == "item" ]; then # Since its an item, execute the command in it
-    data_base_exec=$(echo ${data} | jq -r '.exec')
-    data_exec=$(do_parse "$data_base_exec")
+  if [ "${DATA_TYPE}" == "item" ]; then # Since its an item, execute the command in it
+    DATA_BASE_EXEC=$(echo "${DATA}" | jq -r '.exec')
+    DATA_EXEC=$(do_parse "${DATA_BASE_EXEC}")
 
-    eval $data_exec
+    eval "${DATA_EXEC}"
 
     return 1 #Nowhere else to go, time to exit
-  elif [ "$data_type" == "nop" ]; then # NOP, redisplay menu
-    return $(do_menu "$JSON")
-  elif [ "$data_type" == "subitem" ]; then # Since its a subitem, it just returns the result
-    echo "$result"
+    
+  elif [ "${DATA_TYPE}" == "nop" ]; then # NOP, redisplay menu
+    return "$(do_menu "${JSON}")"
+      
+  elif [ "${DATA_TYPE}" == "subitem" ]; then # Since its a subitem, it just returns the result
+    echo "${RESULT}"
 
     return 0
+    
   else # Since its a submenu, get the choices for it
-    data_has_generate=$(echo ${data} | jq 'has("generate")')
+    DATA_HAS_GENERATE=$(echo "${DATA}" | jq 'has("generate")')
 
     # It has an intermediary menu, gotta do that first
-    if [ "$data_has_generate" == "true" ]; then
-      data_generate=$(echo ${data} | jq -r '.generate')
-      data_prompt=$(echo ${data_generate} | jq -r '.prompt') # Get the prompt
-      data_command=$(echo ${data_generate} | jq -r '.command') # Get the command from where we get the options
+    if [ "${DATA_HAS_GENERATE}" == "true" ]; then
+      DATA_GENERATE=$(echo "${DATA}" | jq -r '.generate')
+      DATA_PROMPT=$(echo "${DATA_GENERATE}" | jq -r '.prompt') # Get the prompt
+      DATA_COMMAND=$(echo "${DATA_GENERATE}" | jq -r '.command') # Get the command from where we get the options
 
-      data_base_gen_exec=$(echo ${data_generate} | jq -r '.exec')  # Optional: exec for generated menu vs. submenu
-      data_base_gen_theme=$(echo ${data_generate} | jq -r '.theme')  # Optional: exec for generated menu vs. submenu
-      data_gen_theme=$theme
-      if [ "$data_base_gen_theme" != "null" ]; then
-        data_gen_theme=$data_base_gen_theme
+      DATA_BASE_GEN_EXEC=$(echo "${DATA_GENERATE}" | jq -r '.exec')  # Optional: exec for generated menu vs. submenu
+      DATA_BASE_GEN_THEME=$(echo "${DATA_GENERATE}" | jq -r '.theme')  # Optional: exec for generated menu vs. submenu
+      DATA_GEN_THEME=${THEME}
+      if [ "${DATA_BASE_GEN_THEME}" != "null" ]; then
+        DATA_GEN_THEME=${DATA_BASE_GEN_THEME}
       fi
 
-      data_menu=$(eval $data_command | jq -r "{ prompt: \"$data_prompt\", theme: \"$data_gen_theme\", choices: [ { name: .[], type: \"subitem\" } ] }")
+      DATA_MENU=$(eval "${DATA_COMMAND}" | jq -r "{ prompt: \"${DATA_PROMPT}\", theme: \"${DATA_GEN_THEME}\", choices: [ { name: .[], type: \"subitem\" } ] }")
       # Parse the options as a menu (With proper format)
       
-      data_result=$(do_menu "$data_menu") # Run the menu and get the chosen option
+      DATA_RESULT=$(do_menu "${DATA_MENU}") # Run the menu and get the chosen option
       
-      if [ -z "$data_result" ]; then # If its empty, it means no proper option was selected (It exited with "1", see above for that check)
+      if [ -z "${DATA_RESULT}" ]; then # If its empty, it means no proper option was selected (It exited with "1", see above for that check)
           exit 1
       fi
 
-      add_param "$data_result" # Now we add the result for future parsing
+      add_param "${DATA_RESULT}" # Now we add the result for future parsing
 
-      if [ "$data_base_gen_exec" != "null" ]; then
-          data_gen_exec=$(do_parse "$data_base_gen_exec")
-          eval $data_gen_exec
+      if [ "${DATA_BASE_GEN_EXEC}" != "null" ]; then
+          DATA_GEN_EXEC=$(do_parse "$DATA_BASE_GEN_EXEC")
+          eval "${DATA_GEN_EXEC}"
           return 1 #Nowhere else to go, time to exit
       fi
     fi
 
     # Load the external json menu if it points to one, otherwise replace with obtained data
-    data_has_redirect=$(echo ${data} | jq 'has("redirect")')
+    DATA_HAS_REDIRECT=$(echo "${DATA}" | jq 'has("redirect")')
 
-    if [ "$data_has_redirect" = "true" ]; then
-      data_redirect=$(echo ${data} | jq -r '.redirect')
-      JSON=$(load_json "$data_redirect")
+    if [ "${DATA_HAS_REDIRECT}" = "true" ]; then
+      DATA_REDIRECT=$(echo "${DATA}" | jq -r '.redirect')
+      JSON=$(load_json "${DATA_REDIRECT}")
     else
-      JSON=$data
+      JSON=$DATA
     fi
   fi
 
