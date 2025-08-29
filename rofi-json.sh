@@ -91,16 +91,18 @@ do_menu() {
       OPTIONS+="\n"
   done <<< "${OPTION_LIST}"
 
+  set -x
   # Get the selected option  
-  RESULT=$(printf "${OPTIONS}\nCancel" | rofi "${ROFI_OPTIONS[@]}" )
+  if ! RESULT=$(printf "${OPTIONS}\nCancel" | rofi "${ROFI_OPTIONS[@]}" ) ; then
+    exit 1 # In case the user cancels (esc key)
+  fi   
   RESULT=${RESULT%%"${ICON_TOKEN}"}
 
   # Gets the data of said option (Returns the first coincidence if name is repeated) or null (If not found)
   DATA=$(jq -r "[ .choices[] | select(.name | startswith(\"$RESULT\")) ] | .[0]" <<< "${MENU}")
-
-  # If we didn't get any data (Be it wrong choice or exited rofi), just exit
+  
   if [ "${DATA}" == "null" ]; then
-    exit 1
+    exit 1 # In case the user types something that doesnt match an option
   fi
 
   # Since we have data, get the type of the selected option
