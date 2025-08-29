@@ -13,10 +13,15 @@ load_json() {
   JSON_NAME="$1.json"
   JSON_FILE="$ROFI_JSON_LOCATION/$JSON_NAME"
 
-  # If file doesn't exist, throw error
-  if [ ! -f "$JSON_FILE" ]; then
-    echo "ERROR: Resource file '$JSON_NAME' not found" >&2
-    exit 1
+  if [ ! -f "${1}" ] ; then
+    JSON_FILE="$ROFI_JSON_LOCATION/$JSON_NAME"
+    # If file doesn't exist, throw error
+    if [ ! -f "$JSON_FILE" ]; then
+      echo "ERROR: Resource file '$JSON_NAME' not found" >&2
+      exit 1
+    fi
+  else
+    JSON_FILE=${1}
   fi
 
   jq -r '.' "$JSON_FILE"
