@@ -10,21 +10,21 @@ ICON_TOKEN="\x00icon\x1f"
 BASE_ROFI_OPTIONS=(-dmenu)
 
 load_json() {
-  JSON_NAME="$1.json"
-  JSON_FILE="$ROFI_JSON_LOCATION/$JSON_NAME"
+  local JSON_NAME="$1.json"
+  local JSON_FILE=${1}
 
-  if [ ! -f "${1}" ] ; then
-    JSON_FILE="$ROFI_JSON_LOCATION/$JSON_NAME"
-    # If file doesn't exist, throw error
-    if [ ! -f "$JSON_FILE" ]; then
-      echo "ERROR: Resource file '$JSON_NAME' not found" >&2
+  # Look first for explicit file path
+  if [ ! -f "${JSON_FILE}" ] ; then
+    # Next, look for the same file in the resources directory
+    JSON_FILE="${ROFI_JSON_LOCATION}/${JSON_NAME}"
+    # If those both failed, throw an error.
+    if [ ! -f "${JSON_FILE}" ]; then
+      echo "ERROR: Resource file \"${1}\" not found" >&2
       exit 1
     fi
-  else
-    JSON_FILE=${1}
   fi
 
-  jq -r '.' "$JSON_FILE"
+  jq -r '.' "${JSON_FILE}"
 }
 
 JSON="$(load_json "$1")"
