@@ -78,19 +78,21 @@ do_menu() {
 
   OPTIONS=""
   OPTION_LIST=$(jq -cr '.choices[] | "\(.name)|\(.icon)"' <<< "${MENU}")
-
+  
   while IFS="|" read -r OPTNAME OPTICON
   do
-      if [ "${OPTNAME}" == "null" ]; then
-          continue
-      fi
-      OPTIONS+=${OPTNAME}
-      if [ "${OPTICON}" != "null" ]; then
-          OPTIONS+="${ICON_TOKEN}${ROFI_ICON_LOCATION}/${OPTICON}"
-      fi
-      OPTIONS+="\n"
-  done <<< "${OPTION_LIST}"
+    if [ "${OPTNAME}" == "null" ]; then
+        continue
+    fi
 
+    OPTIONS+=${OPTNAME}
+    if [ "${OPTICON}" != "null" ]; then
+      OPTIONS+="${ICON_TOKEN}${ROFI_ICON_LOCATION}/${OPTICON}"
+    fi
+
+    OPTIONS+="\n"
+  done <<< "${OPTION_LIST}"
+  
   # Get the selected option  
   if ! RESULT=$(printf "${OPTIONS}" | rofi "${ROFI_OPTIONS[@]}" ) ; then
     exit 1 # In case the user cancels (esc key)
