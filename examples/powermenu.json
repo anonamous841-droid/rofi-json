@@ -3,7 +3,7 @@
   "choices": [
     {
       "name": "Shutdown",
-      "ccicon": "system-shutdown",
+      "icon": "system-shutdown",
       "type": "item",
       "exec": "systemctl poweroff"
     },

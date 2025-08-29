@@ -40,7 +40,7 @@ do_parse() {
   # Replace "$1" with "PARAM_LIST[1]" and so on
   for i in $(seq ${#PARAM_LIST[@]}); do
     OLD_VALUE="\$$i"
-    NEW_VALUE=${PARAM_LIST[$i]}
+    NEW_VALUE=${PARAM_LIST[$((i-1))]}
 
     STRING=${STRING/${OLD_VALUE}/${NEW_VALUE}}
   done
